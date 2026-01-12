@@ -1,0 +1,3 @@
+regional,no_project,no_spk,pop,nama_project,port,jumlah_odp,mitra,progress,toc,start_pekerjaan,target_active,tanggal_active,aging_toc,bep,port_terisi,target_bep,revenue,update_progress,remark,issue,next_action,circulir_status
+JABAR,PRJ001,SPK123,POP BANDUNG,Project FTTH Bandung Timur,100,50,PT Mitra A,CREATED BOQ,30,2026-01-15,2026-03-01,,,12,25,2026-05-01,500000000,2026-01-10,Project baru dalam tahap desain,Belum ada issue,Survey lokasi,ongoing
+JATIM,PRJ002,SPK124,POP SURABAYA,Project Expansion Surabaya Barat,200,80,PT Mitra B,CONST,45,2025-12-01,2026-02-15,2026-02-20,2026-02-10,18,150,2026-06-01,800000000,2026-01-05,Dalam tahap konstruksi,Perizinan tertunda 3 hari,Follow up perizinan,ongoing

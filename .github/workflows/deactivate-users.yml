@@ -1,0 +1,55 @@
+name: Deactivate Inactive Users
+
+on:
+  # Run daily at 2 AM UTC (9 AM WIB)
+  schedule:
+    - cron: '0 2 * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  deactivate-users:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Call Edge Function
+        run: |
+          echo "🚀 Calling deactivate-inactive-users edge function..."
+          
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            https://efxyhgmnrplittfahgzu.supabase.co/functions/v1/deactivate-inactive-users \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "📊 Response Status: $http_code"
+          echo "📝 Response Body:"
+          echo "$body" | jq '.'
+          
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ Successfully called edge function"
+            
+            # Extract deactivated count
+            count=$(echo "$body" | jq -r '.deactivatedCount // 0')
+            echo "👥 Deactivated users: $count"
+            
+            # Show summary
+            if [ "$count" -gt 0 ]; then
+              echo "📋 Deactivated user details:"
+              echo "$body" | jq -r '.deactivatedUsers[] | "  - \(.email) (\(.name)) - Last login: \(.lastLogin)"'
+            else
+              echo "ℹ️  No users to deactivate"
+            fi
+          else
+            echo "❌ Failed to call edge function"
+            exit 1
+          fi
+      
+      - name: Send notification (optional)
+        if: success()
+        run: |
+          echo "✅ Deactivation job completed successfully"
+          # Add Slack/Discord/Email notification here if needed

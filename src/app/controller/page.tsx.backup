@@ -1,0 +1,383 @@
+// Controller Dashboard Page - Refactored with Modular Components
+'use client';
+import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/lib/supabase/client';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { WorksheetProject } from '@/types/worksheet-project';
+import { TrendingUp, FolderKanban, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+
+// Import modular components
+import { MetricCard } from '@/components/dashboard/metric-card';
+import { FilterSection } from '@/components/dashboard/filter-section';
+import { StatusDistributionCard } from '@/components/dashboard/status-distribution-card';
+import { RegionalDistributionCard, RegionalStat } from '@/components/dashboard/regional-distribution-card';
+import { QuickStatsCards } from '@/components/dashboard/quick-stats-cards';
+import { DashboardCard } from '@/components/dashboard/summary-card';
+import { DashboardTable, DashboardTableRow } from '@/components/dashboard/dashboard-table';
+import { statusKeyMap } from '@/lib/status-config';
+
+const summaryCardTemplate: DashboardCard[] = [
+  { key: 'total', title: 'TOTAL LOP', value: 0, subLabel: '', description: 'Total LOP aktif', trend: 'up', trendValue: '', footerNote: '' },
+  { key: 'rescheduled', title: 'RESCHEDULED – 2026', value: 0, subLabel: '', description: 'Project dijadwalkan ulang', trend: 'down', trendValue: '', footerNote: '' },
+  { key: 'cancel', title: 'CANCEL', value: 0, subLabel: '', description: 'Project dibatalkan', trend: 'up', trendValue: '', footerNote: '' },
+  { key: 'done', title: 'DONE', value: 0, subLabel: '', description: 'Project selesai', trend: 'up', trendValue: '', footerNote: '' },
+  { key: 'construction', title: 'CONSTRUCTION', value: 0, subLabel: '', description: 'Sedang konstruksi', trend: 'up', trendValue: '', footerNote: '' },
+  { key: 'ny_construction', title: 'NY CONSTRUCTION', value: 0, subLabel: '', description: 'Belum konstruksi', trend: 'down', trendValue: '', footerNote: '' },
+];
+
+const regionOptions = ['ALL', 'LUWUK', 'MAKASSAR'];
+
+type ProjectProgressStats = {
+  total: number;
+  done: number;
+  in_progress: number;
+  pending: number;
+  construction: number;
+  ny_construction: number;
+  rescheduled: number;
+  cancel: number;
+  totalPorts: number;
+  donePorts: number;
+  constructionPorts: number;
+  nyConstructionPorts: number;
+  rescheduledPorts: number;
+  cancelPorts: number;
+};
+
+type RegionalStat = {
+  name: string;
+  count: number;
+  ports: number;
+  percentage: number;
+};
+
+export default function ControllerDashboardPage() {
+  const [selectedCard, setSelectedCard] = useState('total');
+  const [selectedRegion, setSelectedRegion] = useState('ALL');
+  const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
+  const [projects, setProjects] = useState<WorksheetProject[]>([]);
+  const [summaryData, setSummaryData] = useState<DashboardCard[]>(summaryCardTemplate);
+  const [projectStats, setProjectStats] = useState<ProjectProgressStats>({
+    total: 0,
+    done: 0,
+    in_progress: 0,
+    pending: 0,
+    construction: 0,
+    ny_construction: 0,
+    rescheduled: 0,
+    cancel: 0,
+    totalPorts: 0,
+    donePorts: 0,
+    constructionPorts: 0,
+    nyConstructionPorts: 0,
+    rescheduledPorts: 0,
+    cancelPorts: 0,
+  });
+  const [regionalStats, setRegionalStats] = useState<RegionalStat[]>([]);
+
+  useEffect(() => {
+    async function fetchProjects() {
+      let query = supabase.from('projects').select('*');
+      if (selectedRegion !== 'ALL') {
+        query = query.eq('region', selectedRegion);
+      }
+      const { data, error } = await query;
+      
+      if (!error && data) {
+        setProjects(data);
+        
+        // Calculate comprehensive stats
+        const total = data.length;
+        const totalPorts = data.reduce((acc, p) => acc + (Number(p.port) || 0), 0);
+        
+        const doneProjects = data.filter(p => statusKeyMap[(p.progress || '').toLowerCase()] === 'done');
+        const done = doneProjects.length;
+        const donePorts = doneProjects.reduce((acc, p) => acc + (Number(p.port) || 0), 0);
+        
+        const constructionProjects = data.filter(p => statusKeyMap[(p.progress || '').toLowerCase()] === 'construction');
+        const construction = constructionProjects.length;
+        const constructionPorts = constructionProjects.reduce((acc, p) => acc + (Number(p.port) || 0), 0);
+        
+        const nyConstructionProjects = data.filter(p => statusKeyMap[(p.progress || '').toLowerCase()] === 'ny_construction');
+        const ny_construction = nyConstructionProjects.length;
+        const nyConstructionPorts = nyConstructionProjects.reduce((acc, p) => acc + (Number(p.port) || 0), 0);
+        
+        const rescheduledProjects = data.filter(p => statusKeyMap[(p.progress || '').toLowerCase()] === 'rescheduled');
+        const rescheduled = rescheduledProjects.length;
+        const rescheduledPorts = rescheduledProjects.reduce((acc, p) => acc + (Number(p.port) || 0), 0);
+        
+        const cancelProjects = data.filter(p => statusKeyMap[(p.progress || '').toLowerCase()] === 'cancel');
+        const cancel = cancelProjects.length;
+        const cancelPorts = cancelProjects.reduce((acc, p) => acc + (Number(p.port) || 0), 0);
+        
+        const in_progress = construction + ny_construction;
+        const pending = rescheduled;
+        
+        setProjectStats({
+          total,
+          done,
+          in_progress,
+          pending,
+          construction,
+          ny_construction,
+          rescheduled,
+          cancel,
+          totalPorts,
+          donePorts,
+          constructionPorts,
+          nyConstructionPorts,
+          rescheduledPorts,
+          cancelPorts,
+        });
+        
+        // Calculate regional stats
+        const regions = ['LUWUK', 'MAKASSAR'];
+        const regStats: RegionalStat[] = regions.map(region => {
+          const regionProjects = data.filter(p => p.region === region);
+          const count = regionProjects.length;
+          const ports = regionProjects.reduce((acc, p) => acc + (Number(p.port) || 0), 0);
+          const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+          return { name: region, count, ports, percentage };
+        });
+        setRegionalStats(regStats);
+        
+        // Update summary cards
+        const summary = summaryCardTemplate.map(card => {
+          if (card.key === 'total') {
+            return {
+              ...card,
+              value: total,
+              subLabel: `PORT ${totalPorts}`,
+            };
+          }
+          const filtered = data.filter(p => statusKeyMap[(p.progress || '').toLowerCase()] === card.key);
+          const count = filtered.length;
+          const portSum = filtered.reduce((acc, p) => acc + (Number(p.port) || 0), 0);
+          return {
+            ...card,
+            value: count,
+            subLabel: portSum ? `PORT ${portSum}` : '',
+          };
+        });
+        setSummaryData(summary);
+      } else {
+        setProjects([]);
+        setSummaryData(summaryCardTemplate);
+        setProjectStats({
+          total: 0,
+          done: 0,
+          in_progress: 0,
+          pending: 0,
+          construction: 0,
+          ny_construction: 0,
+          rescheduled: 0,
+          cancel: 0,
+          totalPorts: 0,
+          donePorts: 0,
+          constructionPorts: 0,
+          nyConstructionPorts: 0,
+          rescheduledPorts: 0,
+          cancelPorts: 0,
+        });
+        setRegionalStats([]);
+      }
+    }
+    fetchProjects();
+  }, [selectedRegion, dateRange]);
+
+  const dashboardTableData: DashboardTableRow[] = useMemo(() => {
+    let filtered = projects;
+    if (selectedCard !== 'total') {
+      filtered = projects.filter(p => statusKeyMap[(p.progress || '').toLowerCase()] === selectedCard);
+    }
+    return filtered.map((p) => ({
+      region: p.region || '',
+      pop: p.pop || '',
+      no_project: p.no_project || '',
+      nama_project: p.nama_project || '',
+      port: p.port || '',
+      progress: p.progress || '',
+    }));
+  }, [projects, selectedCard]);
+
+  const progressPercentage = projectStats.total 
+    ? Math.round((projectStats.done / projectStats.total) * 100) 
+
+  // Handler for card click
+  const handleCardClick = (key: string) => {
+    setSelectedCard(key);
+  };
+    : 0;
+
+  return (
+    <div className="flex flex-col gap-4 p-4 sm:p-6 max-w-[1600px] mx-auto">
+      {/* Page Header - Compact */}
+      <div className="space-y-0.5">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Controller Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
+          Overview dan monitoring project FTTH TOC
+        </p>
+      </div>
+
+      {/* KEY METRICS - Responsive Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <MetricCard
+          title="Total Projects"
+          value={projectStats.total}
+          icon={<FolderKanban className="h-4 w-4 sm:h-5 sm:w-5" />}
+          description={`Total ${projectStats.totalPorts} ports`}
+          variant="default"
+        />
+        <MetricCard
+          title="Completed"
+          value={projectStats.done}
+          icon={<CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />}
+          description={`${progressPercentage}% completion rate`}
+          variant="success"
+        />
+        <MetricCard
+          title="In Progress"
+          value={projectStats.construction}
+          icon={<Clock className="h-4 w-4 sm:h-5 sm:w-5" />}
+          description={`${projectStats.in_progress} active`}
+          variant="info"
+        />
+        <MetricCard
+          title="Pending"
+          value={projectStats.pending + projectStats.rescheduled}
+          icon={<AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />}
+          descript*/}
+      <FilterSection
+        regionOptions={regionOptions}
+        selectedRegion={selectedRegion}
+        onRegionChange={setSelectedRegion}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+      /  dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+            />
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* STATUS & REGIONAL DISTRIBUTION - Responsive 2-Column */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+        <Card className="h-fit">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-1.5">
+              <FolderKanban className="h-3.5 w-3.5" />
+              Project Status
+            </CardTitle>*/}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+        <StatusDistributionCard stats={projectStats} />
+        <RegionalDistributionCard stats={regionalStats} /2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
+              Quick Stats
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Click on any card to filter projects by status
+            </p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {summaryData.map(card => {
+            const isSelected = selectedCard === card.key;
+            const statusConfig = getStatusConfig(card.key);
+            
+            return (
+              <Card
+                key={card.key}
+                onClick={() => setSelectedCard(card.key)}
+                className={cn(
+                  "cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1",
+                  isSelected 
+                    ? `border-2 shadow-lg ${statusConfig.borderColor}` 
+                    : "border-2 border-transparent hover:border-primary/20"
+                )}
+              >
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex flex-col gap-2.5">
+                    {/* Icon & Active Badge */}
+                    <div className="flex items-center justify-between">
+                      <div className={cn(
+                        "p-1.5 sm:p-2 rounded-lg",
+                        statusConfig.bgColor
+                      )}>
+                        {statusConfig.icon}
+                      </div>
+                      {isSelected && (
+                        <Badge variant="default" className="text-xs h-5">
+                          Active
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {/* Value & Title */}
+                    <div>
+                      <div className="text-xl sm:text-2xl font-bold tabular-nums">
+                        {card.value}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                        {card.title}
+                      </p>
+                    </div>
+                    
+                    {/* Ports Badge */}
+                    {card.subLabel && (
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "text-xs font-normal h-5 justify-center",
+                          isSelected && statusConfig.textColor
+                        )}
+                      >
+                        {card.subLabel}
+                      </Badge>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* PROJECT TABLE */}
+      {selectedCard && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="space-y-0.5">
+                <CardTitle className="text-base sm:text-lg">
+                  {selectedCard === 'total' ? 'All Projects' : `${summaryData.find(c => c.key === selectedCard)?.title} Projects`}
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Showing {dashboardTableData.length} project(s)
+                </CardDescription>
+              </div>
+              {selectedCard !== 'total' && (
+                <Badge variant="outline" className="text-xs w-fit">
+                  Filtered
+                </Badge>
+              )}
+            </div>*/}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
+              Quick Stats
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Click on any card to filter projects by status
+            </p>
+          </div>
+        </div>
+        
+        <QuickStatsCards
+          summaryData={summaryData}
+          selectedCard={selectedCard}
+          onCardClick={handleCardClick}
+        /
