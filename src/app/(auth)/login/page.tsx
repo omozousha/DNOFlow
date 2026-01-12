@@ -28,14 +28,12 @@ export default function LoginPage() {
       // Only redirect if NOT a recent login (to prevent double redirect)
       if (!isPostLogin && !isRecentLogin) {
         const redirectPath = getDashboardPath(profile.role as UserRole);
-        console.log('[LoginPage] Redirecting already-authenticated user to:', redirectPath);
         // Use hard navigation to ensure cookies are sent to middleware
         window.location.href = redirectPath;
       } else if (isPostLogin || isRecentLogin) {
         // Clear the flags after detecting them
         sessionStorage.removeItem('post-login');
         sessionStorage.removeItem('login-timestamp');
-        console.log('[LoginPage] Post-login detected, skipping redirect');
       }
     }
   }, [user, profile, loading, router, mounted]);

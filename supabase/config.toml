@@ -225,6 +225,11 @@ otp_expiry = 3600
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
 
+# Custom email template untuk konfirmasi sign up
+[auth.email.template.confirm]
+subject = "Konfirmasi Email Anda - DNOFlow"
+content_path = "./supabase/templates/confirm.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true

@@ -42,22 +42,78 @@ export default function UserManagementPage() {
   }, []);
     // import RegisterForm from './register-form';
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this user?')) return;
     setLoading(true);
-    const { error } = await supabase.from('profiles').delete().eq('id', id);
-    if (!error) {
-      fetchUsers();
+    try {
+      // Get session token untuk authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Session expired. Please login again.');
+        setLoading(false);
+        return;
+      }
+
+      // Call API route untuk delete user
+      const response = await fetch(`/api/admin/users/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Error deleting user:', result.error);
+        alert('Gagal menghapus user: ' + result.error);
+      } else {
+        alert('User berhasil dihapus!');
+        await fetchUsers();
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Terjadi kesalahan saat menghapus user');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleEdit = async (id: string, data: Partial<User>) => {
     setLoading(true);
-    const { error } = await supabase.from('profiles').update(data).eq('id', id);
-    if (!error) {
-      fetchUsers();
+    try {
+      // Get session token untuk authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Session expired. Please login again.');
+        setLoading(false);
+        return;
+      }
+
+      // Call API route untuk update user
+      const response = await fetch(`/api/admin/users/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Error updating user:', result.error);
+        alert('Gagal update user: ' + result.error);
+      } else {
+        alert('User berhasil diupdate!');
+        await fetchUsers();
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Terjadi kesalahan saat update user');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleRegisterSuccess = () => {

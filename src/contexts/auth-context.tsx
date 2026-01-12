@@ -57,9 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .select('id,email,role,full_name,division,position,is_active,access')
           .eq('id', userId)
           .single();
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[AuthContext] fetchProfile', { userId, data, error });
-        }
         if (error) throw error;
         if (!data) return;
         // If user is not active, force logout
@@ -121,9 +118,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Refresh session every 30 minutes
     refreshTimerRef.current = setInterval(async () => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[AuthContext] Auto-refreshing session');
-      }
       try {
         const { data, error } = await supabase.auth.refreshSession();
         if (error) throw error;
@@ -142,9 +136,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[AuthContext] getSession', { session });
-        }
         if (mounted) {
           setSession(session);
           setUser(session?.user ?? null);
@@ -165,9 +156,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[AuthContext] onAuthStateChange', { event, session });
-        }
         if (!mounted) return;
         
         // Only show loading spinner for initial session and sign out events
