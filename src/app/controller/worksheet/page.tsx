@@ -388,12 +388,11 @@ export default function ControllerWorksheetPage() {
         const { data: { user } } = await supabase.auth.getUser();
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("division, organization_id")
+          .select("division")
           .eq("id", user?.id)
           .single();
         
         const userDivision = profileData?.division;
-        const organizationId = profileData?.organization_id;
         
         // Process and validate each row
         const errors: string[] = [];
@@ -553,7 +552,6 @@ export default function ControllerWorksheetPage() {
             issue: row.issue || null,
             next_action: row.next_action || null,
             circulir_status: row.circulir_status?.toLowerCase() || null,
-            organization_id: organizationId,
             division: userDivision,
           };
         }).filter(row => row.no_project && row.nama_project);

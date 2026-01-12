@@ -20,7 +20,6 @@ type AuthContextType = {
     is_active: boolean; 
     access: string;
     last_login?: string | null;
-    organization_id?: string;
   } | null;
   signOut: () => Promise<void>;
   resetInactivityTimer: () => void;

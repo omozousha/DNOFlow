@@ -160,7 +160,7 @@ export function NewProjectForm({
   if (typeof setOpen !== "function") {
     throw new Error("NewProjectForm: setOpen prop is required and must be a function.");
   }
-  // Get logged-in user profile (for division/organization_id)
+  // Get logged-in user profile (for division)
   const { profile } = useAuth();
   // Controlled form state for all fields
   const [regional, setRegional] = useState(initialData.regional || "");
@@ -279,7 +279,7 @@ export function NewProjectForm({
     const revenueNum = parseFloat(revenue?.toString() || "0");
     const capexNum = revenueNum * 0.6;
     
-    // Inject organization_id or division from profile (controller)
+    // Inject division from profile (controller)
     const data = {
       regional,
       pop,
@@ -310,8 +310,7 @@ export function NewProjectForm({
       issue: issue || null,
       next_action: next_action || null,
       circulir_status: circulir_status || null,
-      // Add organization_id or division from profile if available
-      ...(profile?.organization_id && { organization_id: profile.organization_id }),
+      // Add division from profile if available
       ...(profile?.division && { division: profile.division }),
     };
     onSubmit(data);

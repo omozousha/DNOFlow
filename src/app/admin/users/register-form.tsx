@@ -8,20 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 
-const ORGANIZATIONS = [
-  { id: "7ff16685-fe06-4007-ad9f-729c0ff8c64c", name: "Update" },
-  { id: "3b2b4493-c8de-4cd8-bc58-3c8c28594679", name: "Planning" },
-  { id: "a5ed8a73-32ec-426c-aa00-37e5fc785bd5", name: "Operation" },
-  { id: "748dbaea-cb3f-462e-8608-b7a7d972f45b", name: "Deployment" },
-];
-
 export default function RegisterForm({ onSuccess }: { onSuccess?: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("controller");
   const [division, setDivision] = useState("PLANNING");
-  const [organizationId, setOrganizationId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -43,7 +35,6 @@ export default function RegisterForm({ onSuccess }: { onSuccess?: () => void }) 
             full_name: fullName,
             role: role,
             division: division,
-            organization_id: organizationId,
           },
         },
       });
@@ -119,7 +110,6 @@ export default function RegisterForm({ onSuccess }: { onSuccess?: () => void }) 
         setFullName("");
         setRole("controller");
         setDivision("PLANNING");
-        setOrganizationId("");
         if (onSuccess) onSuccess();
       }
     } catch (err: any) {
@@ -191,21 +181,6 @@ export default function RegisterForm({ onSuccess }: { onSuccess?: () => void }) 
                 <SelectItem value="PLANNING">PLANNING</SelectItem>
                 <SelectItem value="DEPLOYMENT">DEPLOYMENT</SelectItem>
                 <SelectItem value="OPERATIONS">OPERATIONS</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1 md:col-span-2">
-            <Label htmlFor="organization">Organization</Label>
-            <Select value={organizationId} onValueChange={setOrganizationId} disabled={loading}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select organization" />
-              </SelectTrigger>
-              <SelectContent>
-                {ORGANIZATIONS.map((org) => (
-                  <SelectItem key={org.id} value={org.id}>
-                    {org.name}
-                  </SelectItem>
-                ))}
               </SelectContent>
             </Select>
           </div>
