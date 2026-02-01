@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { LoadingSpinner, FullScreenLoader } from "@/components/ui/loading-spinner";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
@@ -23,9 +23,8 @@ import {
   BarChart3,
   XCircle,
   PlayCircle,
-  MapPin,
   Search,
-  Filter
+  
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -169,7 +168,6 @@ export default function ControllerWorksheetPage() {
   const [importDialog, setImportDialog] = useState(false);
   const [projects, setProjects] = useState<WorksheetProject[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   
   // Update progress dialog
@@ -183,7 +181,6 @@ export default function ControllerWorksheetPage() {
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const { data, error } = await supabase
         .from("projects")
@@ -193,9 +190,10 @@ export default function ControllerWorksheetPage() {
       
       if (error) throw error;
       setProjects(data || []);
-    } catch (error: any) {
-      setError(error.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
       setProjects([]);
+      console.error("Failed to fetch projects:", message);
       toast.error("Gagal memuat data project");
     } finally {
       setLoading(false);
@@ -241,24 +239,28 @@ export default function ControllerWorksheetPage() {
     toast.success("Data berhasil di-refresh");
   }
 
-  async function handleSubmit(data: any) {
+  async function handleSubmit(data: WorksheetProject) {
     setFormLoading(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
 
-      const result = await supabase.from("projects").insert([data]);
+      const { data: inserted, error: insertError } = await supabase
+        .from("projects")
+        .insert([data])
+        .select("id")
+        .single();
       
-      if (result.error) {
-        toast.error("Gagal menyimpan project: " + result.error.message);
+      if (insertError) {
+        toast.error("Gagal menyimpan project: " + insertError.message);
       } else {
         toast.success("Project berhasil disimpan");
         
         // Log the create action (optional - don't fail if logging fails)
-        if (result.data && Array.isArray(result.data) && (result.data[0] as any)?.id) {
+        if (inserted?.id) {
           try {
             await supabase.from('project_logs').insert({
-              project_id: (result.data[0] as any).id,
+              project_id: inserted.id,
               action: 'created',
               field_changed: null,
               old_value: null,
@@ -393,10 +395,26 @@ export default function ControllerWorksheetPage() {
           .single();
         
         const userDivision = profileData?.division;
+
+        type ImportRow = {
+          regional?: string;
+          no_project?: string;
+          nama_project?: string;
+          pop?: string;
+          progress?: string;
+          port?: string | number;
+          port_terisi?: string | number;
+          revenue?: string | number;
+          remark?: string;
+          issue?: string;
+          next_action?: string;
+          circulir_status?: string;
+          [key: string]: unknown;
+        };
         
         // Process and validate each row
         const errors: string[] = [];
-        const mapped = (Array.isArray(data) ? data : []).map((row: any, index: number) => {
+        const mapped = (Array.isArray(data) ? (data as ImportRow[]) : []).map((row, index: number) => {
           const rowNum = index + 2; // Excel row number (header is row 1)
           
           // Validasi field wajib (hanya 4 field: regional, no_project, nama_project, pop)
@@ -482,7 +500,8 @@ export default function ControllerWorksheetPage() {
           }
           
           // Division-based validation
-          const mapping = PROGRESS_MAPPING[row.progress];
+          const progressKey = row.progress ?? "";
+          const mapping = PROGRESS_MAPPING[progressKey];
           if (userDivision === "PLANNING" && mapping?.uic === "DEPLOYMENT") {
             errors.push(`Baris ${rowNum}: User PLANNING tidak boleh import project dengan progress DEPLOYMENT`);
           }
@@ -492,7 +511,7 @@ export default function ControllerWorksheetPage() {
           
           // Auto-calculate status, uic, percentage, capex, occupancy
           // Note: idle_port is auto-calculated by database (GENERATED ALWAYS column)
-          const autoFields = PROGRESS_MAPPING[row.progress] || { status: "PENDING", uic: "PLANNING & DEPLOYMENT", percentage: 0 };
+          const autoFields = PROGRESS_MAPPING[progressKey] || { status: "PENDING", uic: "PLANNING & DEPLOYMENT", percentage: 0 };
           
           const port = Number(row.port) || 0;
           const port_terisi = Number(row.port_terisi) || 0;
@@ -502,7 +521,7 @@ export default function ControllerWorksheetPage() {
           const capex = revenue * 0.6;
           
           // Helper to format date from Excel (if needed)
-          function formatDate(value: any) {
+          function formatDate(value: unknown) {
             if (!value) return null;
             if (typeof value === 'string') {
               // Already a string date, ensure it's YYYY-MM-DD format
@@ -570,7 +589,7 @@ export default function ControllerWorksheetPage() {
         }
         
         // Bulk insert to database
-        const { data: insertedData, error: insertError } = await supabase
+        const { error: insertError } = await supabase
           .from("projects")
           .insert(mapped)
           .select();
@@ -583,8 +602,9 @@ export default function ControllerWorksheetPage() {
           await fetchProjects();
           setImportDialog(false);
         }
-      } catch (err: any) {
-        toast.error("Error saat import: " + err.message);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        toast.error("Error saat import: " + message);
       } finally {
         setImportLoading(false);
       }

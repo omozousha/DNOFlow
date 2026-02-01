@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { AlertCircle, Sparkles, RotateCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface IssueResume {
   summary: string;
@@ -19,7 +19,15 @@ interface IssueResume {
 }
 
 interface IssueResumeCardProps {
-  projects: any[];
+  projects: Array<{
+    progress?: string | null;
+    issue?: string | null;
+    nama_project?: string | null;
+    no_project?: string | null;
+    regional?: string | null;
+    tanggal_active?: string | null;
+    target_active?: string | null;
+  }>;
 }
 
 export function IssueResumeCard({ projects }: IssueResumeCardProps) {
@@ -36,7 +44,7 @@ export function IssueResumeCard({ projects }: IssueResumeCardProps) {
   const [isCached, setIsCached] = useState(false);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
 
-  const analyzeIssuesWithAI = async (forceRefresh = false) => {
+  const analyzeIssuesWithAI = useCallback(async (forceRefresh = false) => {
       if (projects.length === 0) {
         setResume({
           summary: "📭 Tidak ada data proyek untuk dianalisis.",
@@ -96,9 +104,9 @@ export function IssueResumeCard({ projects }: IssueResumeCardProps) {
           console.warn('[IssueResume] Using fallback analysis:', data.error);
           setError('Using fallback analysis');
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error('[IssueResume] Error fetching AI analysis:', err);
-        setError(err.message);
+        setError(err instanceof Error ? err.message : 'Unknown error');
         
         // Fallback to simple local analysis
         const criticalCount = projects.filter(p => 
@@ -137,11 +145,11 @@ export function IssueResumeCard({ projects }: IssueResumeCardProps) {
       } finally {
         setIsLoading(false);
       }
-    };
+    }, [projects]);
 
   useEffect(() => {
     analyzeIssuesWithAI();
-  }, [projects, refreshKey]);
+  }, [analyzeIssuesWithAI, refreshKey]);
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
@@ -234,6 +242,18 @@ export function IssueResumeCard({ projects }: IssueResumeCardProps) {
           )}>
             {resume.summary}
           </p>
+
+          {!isLoading && error && (
+            <p className="text-[10px] text-amber-500/90">
+              {error}
+            </p>
+          )}
+
+          {!isLoading && generatedAt && (
+            <p className="text-[10px] text-muted-foreground">
+              Generated: {new Date(generatedAt).toLocaleString('id-ID')}
+            </p>
+          )}
 
           {/* Issue Counters */}
           <div className="flex flex-wrap gap-1.5">

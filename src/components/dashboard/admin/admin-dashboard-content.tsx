@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase/client';
 import {
   Card,
@@ -50,8 +49,11 @@ type ProjectProgressStats = {
   pending: number;
 };
 
+type ProjectRow = {
+  progress: string | null;
+};
+
 export default function AdminDashboardContent() {
-  const { profile } = useAuth();
   const [userStats, setUserStats] = useState({ totalUsers: 0, activeUsers: 0, inactiveUsers: 0 });
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [projectStats, setProjectStats] = useState<ProjectProgressStats>({ 
@@ -103,12 +105,13 @@ export default function AdminDashboardContent() {
         .from('projects')
         .select('progress');
       
-      let total = projects?.length || 0;
-      let done = projects?.filter((p: any) => p.progress === 'done')?.length || 0;
-      let in_progress = projects?.filter((p: any) => 
-        p.progress && p.progress !== 'done' && p.progress !== 'pending'
-      )?.length || 0;
-      let pending = projects?.filter((p: any) => p.progress === 'pending')?.length || 0;
+      const typedProjects = (projects ?? []) as ProjectRow[];
+      const total = typedProjects.length;
+      const done = typedProjects.filter(p => p.progress === 'done').length;
+      const in_progress = typedProjects.filter(
+        p => !!p.progress && p.progress !== 'done' && p.progress !== 'pending'
+      ).length;
+      const pending = typedProjects.filter(p => p.progress === 'pending').length;
       
       setProjectStats({ total, done, in_progress, pending });
       

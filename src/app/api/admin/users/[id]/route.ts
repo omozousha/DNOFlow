@@ -102,14 +102,14 @@ export async function PATCH(
       if (!getUserError && authUser) {
         userExistsInAuth = true;
       }
-    } catch (err) {
+    } catch {
       // User not in auth.users, will only update profile
     }
 
     // 1. Update email di auth.users jika ada dan user exists
     if (body.email && userExistsInAuth) {
       try {
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+        const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
           id,
           { email: body.email }
         );

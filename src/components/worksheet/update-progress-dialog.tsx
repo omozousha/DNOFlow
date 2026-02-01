@@ -103,8 +103,9 @@ export function UpdateProgressDialog({
       toast.success("Progress berhasil diupdate");
       onSuccess?.();
       onOpenChange(false);
-    } catch (error: any) {
-      toast.error("Gagal update progress: " + error.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.error("Gagal update progress: " + message);
     } finally {
       setLoading(false);
     }

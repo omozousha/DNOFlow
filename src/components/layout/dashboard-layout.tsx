@@ -1,10 +1,10 @@
 'use client';
 
 import * as React from "react";
-import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
+import { Banner } from "@/components/banner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { 
-  User, 
   Mail, 
-  Shield, 
   Building2, 
   Briefcase, 
   Calendar,
@@ -44,7 +42,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     confirm: false
   });
   const [loading, setLoading] = React.useState(false);
-  const { profile, user } = useAuth();
+  const { profile } = useAuth();
   
   const openAccountDialog = React.useCallback(() => {
     setAccountDialogOpen(true);
@@ -79,8 +77,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       toast.success('Password changed successfully!');
       setShowChangePassword(false);
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to change password');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to change password';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -111,6 +110,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <AppSidebar />
           <div className="flex-1 flex flex-col w-full">
             <SiteHeader />
+            <Banner />
             <main className="flex-1 w-full">
               {children}
             </main>

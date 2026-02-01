@@ -20,7 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogClose,
 } from '@/components/ui/dialog';
 
 export type UserTableRow = {

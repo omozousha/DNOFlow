@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { Spinner } from '@/components/ui/spinner';
@@ -13,21 +13,21 @@ interface RouteGuardProps {
 export default function RouteGuard({ children, requireAuth = true }: RouteGuardProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [hasRedirected, setHasRedirected] = useState(false);
+  const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
     // ...existing code...
-    if (loading || hasRedirected) return;
+    if (loading || hasRedirectedRef.current) return;
     // Jangan redirect sebelum user siap
     if (requireAuth && !user) {
       // ...existing code...
-      setHasRedirected(true);
+      hasRedirectedRef.current = true;
       router.push('/login');
       return;
     }
     // Jika user sudah login dan di halaman login, redirect ke dashboard
     if (!requireAuth && user && window.location.pathname === '/login') {
-      setHasRedirected(true);
+      hasRedirectedRef.current = true;
       const role = user.user_metadata?.role || 'user';
       let redirectPath;
       switch (role) {
@@ -40,7 +40,7 @@ export default function RouteGuard({ children, requireAuth = true }: RouteGuardP
       // ...existing code...
       router.push(redirectPath);
     }
-  }, [user, loading, requireAuth, router, hasRedirected]);
+  }, [user, loading, requireAuth, router]);
 
   // Show loading spinner while checking authentication
   if (loading) {

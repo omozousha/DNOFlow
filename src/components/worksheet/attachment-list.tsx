@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, File, Download, Trash2, Loader2 } from "lucide-react";
@@ -47,11 +47,13 @@ export function AttachmentList({ projectId, onUpdate }: AttachmentListProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    fetchAttachments();
-  }, [projectId]);
+  const fetchAttachments = useCallback(async () => {
+    if (!projectId) {
+      setAttachments([]);
+      setLoading(false);
+      return;
+    }
 
-  async function fetchAttachments() {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -62,12 +64,17 @@ export function AttachmentList({ projectId, onUpdate }: AttachmentListProps) {
 
       if (error) throw error;
       setAttachments(data || []);
-    } catch (error: any) {
-      toast.error("Gagal load attachments: " + error.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      toast.error("Gagal load attachments: " + message);
     } finally {
       setLoading(false);
     }
-  }
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchAttachments();
+  }, [fetchAttachments]);
 
   async function handleDownload(attachment: Attachment) {
     try {
@@ -88,8 +95,9 @@ export function AttachmentList({ projectId, onUpdate }: AttachmentListProps) {
       URL.revokeObjectURL(url);
 
       toast.success("File berhasil didownload");
-    } catch (error: any) {
-      toast.error("Gagal download file: " + error.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      toast.error("Gagal download file: " + message);
     }
   }
 
@@ -120,8 +128,9 @@ export function AttachmentList({ projectId, onUpdate }: AttachmentListProps) {
       setDeleteId(null);
       fetchAttachments();
       onUpdate?.();
-    } catch (error: any) {
-      toast.error("Gagal hapus file: " + error.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      toast.error("Gagal hapus file: " + message);
     } finally {
       setDeleting(false);
     }

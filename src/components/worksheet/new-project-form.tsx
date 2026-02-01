@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import {
   Drawer,
@@ -50,6 +50,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { DatePicker } from "@/components/date-picker"
+import { WorksheetProject } from "@/types/worksheet-project"
 
 /* =======================
    CONSTANT DATA
@@ -148,13 +149,11 @@ export function NewProjectForm({
   onSubmit,
   initialData = {},
   loading = false,
-  ...props
-    // ...props (removed unused)
 }: {
   open: boolean
   setOpen: (v: boolean) => void
-  onSubmit: (data: any) => void // TODO: type properly
-  initialData?: any // TODO: type properly
+  onSubmit: (data: WorksheetProject) => void
+  initialData?: WorksheetProject
   loading?: boolean
 }) {
   if (typeof setOpen !== "function") {
@@ -162,6 +161,8 @@ export function NewProjectForm({
   }
   // Get logged-in user profile (for division)
   const { profile } = useAuth();
+  const formRef = useRef<HTMLFormElement | null>(null)
+
   // Controlled form state for all fields
   const [regional, setRegional] = useState(initialData.regional || "");
   const [pop, setPop] = useState(initialData.pop || "");
@@ -217,21 +218,20 @@ export function NewProjectForm({
   const [next_action, setNextAction] = useState(initialData.next_action || "");
   const [circulir_status, setCirculirStatus] = useState(initialData.circulir_status || "ongoing");
 
-  // Derived fields
-  const [status, setStatus] = useState(initialData.status || "");
-  const [uic, setUic] = useState(initialData.uic || "");
-  const [persentase, setPersentase] = useState(initialData.persentase || "0");
-  const [occupancy, setOccupancy] = useState(initialData.occupancy || "0%");
-  const [capex, setCapex] = useState(initialData.capex || "Rp 0");
-
-  useEffect(() => {
-    const key = progress;
-    if (PROGRESS_MAPPING[key]) {
-      setStatus(PROGRESS_MAPPING[key].status);
-      setUic(PROGRESS_MAPPING[key].uic);
-      setPersentase(PROGRESS_MAPPING[key].percentage.toString());
-    }
-  }, [progress]);
+  // Derived / computed fields (kept pure; read-only inputs)
+  const progressMapping = PROGRESS_MAPPING[progress]
+  const derivedStatus = progressMapping?.status ?? (initialData.status || "")
+  const derivedUic = progressMapping?.uic ?? (initialData.uic || "")
+  const derivedPersentase = (
+    progressMapping?.percentage ?? Number(initialData.persentase || 0)
+  ).toString()
+  const derivedOccupancy =
+    port <= 0 ? "0%" : `${((portTerisi / port) * 100).toFixed(2)}%`
+  const derivedCapex =
+    "Rp " +
+    (port * 850_000).toLocaleString("id-ID", {
+      maximumFractionDigits: 0,
+    })
 
   // Determine allowed progress options based on user division
   let allowedProgress = [] as string[];
@@ -240,41 +240,21 @@ export function NewProjectForm({
   } else if (profile?.division === "DEPLOYMENT") {
     allowedProgress = DEPLOYMENT_PROGRESS;
   } else {
-    allowedProgress = [];
+    allowedProgress = PROGRESS_LIST;
   }
-
-  useEffect(() => {
-    if (port <= 0) {
-      setOccupancy("0%");
-      return;
-    }
-    const val = ((portTerisi / port) * 100).toFixed(2);
-    setOccupancy(`${val}%`);
-  }, [port, portTerisi]);
-
-  useEffect(() => {
-    const total = port * 850_000;
-    setCapex(
-      "Rp " +
-        total.toLocaleString("id-ID", {
-          maximumFractionDigits: 0,
-        })
-    );
-  }, [port]);
 
   // Handle submit
   function handleFormSubmit(e: React.FormEvent) {
     e.preventDefault();
     
-    // Helper to convert Date to ISO string or null
+    // Helper to convert Date to ISO string (YYYY-MM-DD) or undefined
     function dateToISO(date?: Date) {
-      return date ? date.toISOString().split('T')[0] : null;
+      return date ? date.toISOString().split('T')[0] : undefined;
     }
     
     // Calculate derived fields
     const portNum = parseInt(port?.toString() || "0");
     const portTerisiNum = parseInt(portTerisi?.toString() || "0");
-    const idlePortNum = Math.max(portNum - portTerisiNum, 0);
     const occupancyNum = portNum > 0 ? Math.round((portTerisiNum / portNum) * 100) : 0;
     const revenueNum = parseFloat(revenue?.toString() || "0");
     const capexNum = revenueNum * 0.6;
@@ -288,7 +268,7 @@ export function NewProjectForm({
       nama_project,
       mitra,
       port: portNum.toString(),
-      jumlah_odp: jumlah_odp?.toString() || null,
+      jumlah_odp: jumlah_odp ? jumlah_odp.toString() : undefined,
       port_terisi: portTerisiNum.toString(),
       // idle_port: excluded - auto-calculated by database (GENERATED ALWAYS column)
       occupancy: occupancyNum.toString(),
@@ -297,19 +277,19 @@ export function NewProjectForm({
       target_active: dateToISO(target_active),
       tanggal_active: dateToISO(tanggal_active),
       aging_toc: dateToISO(aging_toc),
-      toc: toc?.toString() || null,
+      toc: toc ? toc.toString() : undefined,
       update_progress: new Date().toISOString(),
-      bep: bep?.toString() || null,
+      bep: bep ? bep.toString() : undefined,
       target_bep: dateToISO(target_bep),
       capex: capexNum.toString(),
       revenue: revenueNum.toString(),
-      uic,
-      status,
-      persentase,
-      remark: remark || null,
-      issue: issue || null,
-      next_action: next_action || null,
-      circulir_status: circulir_status || null,
+      uic: derivedUic,
+      status: derivedStatus,
+      persentase: derivedPersentase,
+      remark: remark || undefined,
+      issue: issue || undefined,
+      next_action: next_action || undefined,
+      circulir_status: circulir_status || undefined,
       // Add division from profile if available
       ...(profile?.division && { division: profile.division }),
     };
@@ -318,18 +298,18 @@ export function NewProjectForm({
 
   // Keyboard shortcut handler (Ctrl+S)
   useEffect(() => {
+    if (!open) return
+
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        handleFormSubmit(e as any);
+        e.preventDefault()
+        formRef.current?.requestSubmit()
       }
     }
-    
-    if (open) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [open, regional, pop, no_project, nama_project, port, progress]);
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [open])
 
   return (
     <Drawer open={open} onOpenChange={setOpen} direction="right">
@@ -359,7 +339,7 @@ export function NewProjectForm({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p className="text-sm">Field dengan tanda <span className="text-red-500">*</span> wajib diisi. Field dengan badge "Auto" akan dihitung otomatis.</p>
+                      <p className="text-sm">Field dengan tanda <span className="text-red-500">*</span> wajib diisi. Field dengan badge &quot;Auto&quot; akan dihitung otomatis.</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -371,7 +351,7 @@ export function NewProjectForm({
               </div>
             </div>
           </DrawerHeader>
-          <form className="space-y-6 px-6 py-6 pb-24" onSubmit={handleFormSubmit}>
+          <form ref={formRef} className="space-y-6 px-6 py-6 pb-24" onSubmit={handleFormSubmit}>
             {/* IDENTITAS */}
             <Card>
               <CardHeader>
@@ -439,7 +419,7 @@ export function NewProjectForm({
                   <Input readOnly value={Math.max(port - portTerisi, 0)} className="bg-muted cursor-not-allowed" />
                 </Field>
                 <Field label="Occupancy %" badge="Auto">
-                  <Input readOnly value={occupancy} className="bg-muted cursor-not-allowed" />
+                  <Input readOnly value={derivedOccupancy} className="bg-muted cursor-not-allowed" />
                 </Field>
               </CardContent>
             </Card>
@@ -539,7 +519,7 @@ export function NewProjectForm({
                         Now
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Otomatis terisi tanggal dan jam saat ini. Klik "Now" untuk update.</p>
+                    <p className="text-xs text-muted-foreground mt-1">Otomatis terisi tanggal dan jam saat ini. Klik &quot;Now&quot; untuk update.</p>
                   </Field>
                 </div>
               </CardContent>
@@ -574,16 +554,16 @@ export function NewProjectForm({
                   />
                 </Field>
                 <Field label="CAPEX" badge="Auto">
-                  <Input readOnly value={capex} className="bg-muted cursor-not-allowed" />
+                  <Input readOnly value={derivedCapex} className="bg-muted cursor-not-allowed" />
                 </Field>
                 <Field label="Revenue">
                   <Input value={revenue} onChange={e => setRevenue(e.target.value)} placeholder="Total revenue" />
                 </Field>
                 <Field label="UIC" badge="Auto">
-                  <Input readOnly value={uic} className="bg-muted cursor-not-allowed" />
+                  <Input readOnly value={derivedUic} className="bg-muted cursor-not-allowed" />
                 </Field>
                 <Field label="Status" badge="Auto">
-                  <Input readOnly value={status} className="bg-muted cursor-not-allowed" />
+                  <Input readOnly value={derivedStatus} className="bg-muted cursor-not-allowed" />
                 </Field>
               </CardContent>
             </Card>

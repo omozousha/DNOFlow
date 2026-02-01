@@ -1,4 +1,5 @@
 "use client";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,6 @@ import ProjectTable from "@/components/projects/project-table";
 import { ProjectLogsDialog } from "@/components/projects/project-logs-dialog";
 import { ArchiveProjectDialog } from "@/components/projects/archive-project-dialog";
 import { RestoreProjectDialog } from "@/components/projects/restore-project-dialog";
-import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { WorksheetProject } from "@/types/worksheet-project";
 import { FolderOpen, Archive as ArchiveIcon, Download } from "lucide-react";
@@ -46,12 +46,14 @@ export default function ControllerProjectsPage() {
     setRestoreDialogOpen(true);
   };
 
+  const fetchProjectsRef = useRef<(() => Promise<void>) | null>(null);
+
   const handleArchiveSuccess = () => {
-    fetchProjects(); // Refresh list
+    fetchProjectsRef.current?.(); // Refresh list
   };
 
   const handleRestoreSuccess = () => {
-    fetchProjects(); // Refresh list
+    fetchProjectsRef.current?.(); // Refresh list
   };
 
   // Export to Excel
@@ -115,11 +117,33 @@ export default function ControllerProjectsPage() {
       
       toast.success(`Berhasil export ${dataToExport.length} projects`);
       setExportDialogOpen(false);
-    } catch (error: any) {
-      console.error('Export error:', error);
-      toast.error("Gagal export data: " + error.message);
+    } catch (err) {
+      console.error('Export error:', err);
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      toast.error("Gagal export data: " + message);
     }
   };
+
+  const fetchProjects = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const isArchived = activeTab === "archived";
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq('is_archived', isArchived)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setProjects([]);
+    } finally {
+      setLoading(false);
+    }
+    setPage(1); // Reset to page 1 when switching tabs
+  }, [activeTab]);
 
   useEffect(() => {
     fetchProjects();
@@ -146,26 +170,11 @@ export default function ControllerProjectsPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeTab]);
+  }, [activeTab, fetchProjects]);
 
-  async function fetchProjects() {
-    setLoading(true);
-    setError(null);
-    const isArchived = activeTab === "archived";
-    const { data, error } = await supabase
-      .from("projects")
-      .select("*")
-      .eq('is_archived', isArchived)
-      .order("created_at", { ascending: false });
-    if (error) {
-      setError(error.message);
-      setProjects([]);
-    } else {
-      setProjects(data || []);
-    }
-    setLoading(false);
-    setPage(1); // Reset to page 1 when switching tabs
-  }
+  useEffect(() => {
+    fetchProjectsRef.current = fetchProjects;
+  }, [fetchProjects]);
 
   // Filter logic
   const filteredProjects = projects;

@@ -93,7 +93,6 @@ export function LoginForm({
         const errorMsg = 'Email dan password harus diisi';
         setError(errorMsg);
         toast.error(errorMsg);
-        setLoading(false);
         if (process.env.NODE_ENV === 'development') {
           console.warn('[Login] Email/password kosong', { email, password });
         }
@@ -108,7 +107,6 @@ export function LoginForm({
         toast.error(errorMsg);
         setIsLocked(true);
         setLockTimeRemaining(remainingTime);
-        setLoading(false);
         return;
       }
 
@@ -164,7 +162,6 @@ export function LoginForm({
         if (process.env.NODE_ENV === 'development') {
           console.error('[Login] Error saat login:', signInError, errorMsg);
         }
-        setLoading(false);
         return;
       }
       
@@ -194,6 +191,11 @@ export function LoginForm({
         }).eq('id', data.user.id);
       }
       
+      // Initialize last activity timestamp for session timeout
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('dnoflow_last_activity', Date.now().toString());
+      }
+      
       toast.success('Login successful!', { id: 'login-toast' });
       
       // Fetch user profile to determine redirect path
@@ -213,7 +215,6 @@ export function LoginForm({
           description: 'Silakan hubungi administrator untuk mengaktifkan kembali akun Anda.',
           duration: 6000,
         });
-        setLoading(false);
         return;
       }
       
@@ -222,28 +223,20 @@ export function LoginForm({
         ? getDashboardPath(profile.role as 'admin' | 'owner' | 'controller' | 'user')
         : '/admin'; // fallback default
       
-      // Mark as post-login BEFORE redirect to prevent race condition
-      // Use multiple mechanisms to ensure it's captured
-      try {
-        sessionStorage.setItem('post-login', 'true');
-        sessionStorage.setItem('login-timestamp', Date.now().toString());
-      } catch (e) {
-        console.warn('[Login] SessionStorage not available');
-      }
+      // Wait briefly to let AuthContext process the auth state change
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Use Next.js router for navigation to avoid hard refresh issues
+      // Middleware/proxy will still run on client navigations
+      router.replace(redirectPath);
       
-      // Wait for AuthContext to finish processing the auth state change
-      // This gives time for onAuthStateChange to fetch profile and setLoading(false)
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Don't set loading to false before redirect - keep spinner visible
-      // Use window.location for hard navigation to ensure middleware receives cookies
-      window.location.href = redirectPath;
-      
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Login] Exception:', err);
-      const errorMsg = err.message || 'Terjadi kesalahan saat login';
+      const errorMsg = err instanceof Error ? err.message : 'Terjadi kesalahan saat login';
       setError(errorMsg);
       toast.error(errorMsg, { id: 'login-toast' });
+    } finally {
+      // Always reset loading state regardless of success or error
       setLoading(false);
     }
   };

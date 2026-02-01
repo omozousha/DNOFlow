@@ -1,0 +1,179 @@
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  
+  /* Modern Futuristic Custom Properties */
+  --color-glow: var(--glow);
+  --color-shimmer: var(--shimmer);
+  --color-glass: var(--glass);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+}
+
+:root {
+  /* Modern Border Radius */
+  --radius: 0.75rem;
+  
+  /* Base Colors - Light Theme */
+  --background: oklch(0.99 0.002 264);
+  --foreground: oklch(0.15 0.01 264);
+  
+  /* Card - Subtle gradient ready */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0.01 264);
+  
+  /* Popover */
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.01 264);
+  
+  /* Primary - Modern blue with slight saturation */
+  --primary: oklch(0.45 0.15 264);
+  --primary-foreground: oklch(0.99 0 0);
+  
+  /* Secondary - Neutral with warmth */
+  --secondary: oklch(0.96 0.01 264);
+  --secondary-foreground: oklch(0.20 0.02 264);
+  
+  /* Muted - Balanced contrast */
+  --muted: oklch(0.96 0.01 264);
+  --muted-foreground: oklch(0.50 0.02 264);
+  
+  /* Accent - Slightly vibrant */
+  --accent: oklch(0.95 0.02 264);
+  --accent-foreground: oklch(0.25 0.03 264);
+  
+  /* Destructive - Red with energy */
+  --destructive: oklch(0.58 0.24 27);
+  
+  /* Borders & Inputs */
+  --border: oklch(0.90 0.01 264);
+  --input: oklch(0.90 0.01 264);
+  --ring: oklch(0.45 0.15 264);
+  
+  /* Chart Colors - Vibrant & Distinct */
+  --chart-1: oklch(0.65 0.22 41);     /* Orange */
+  --chart-2: oklch(0.60 0.18 185);    /* Cyan */
+  --chart-3: oklch(0.45 0.15 227);    /* Blue */
+  --chart-4: oklch(0.83 0.19 84);     /* Yellow */
+  --chart-5: oklch(0.77 0.19 70);     /* Lime */
+  
+  /* Sidebar */
+  --sidebar: oklch(0.98 0.002 264);
+  --sidebar-foreground: oklch(0.15 0.01 264);
+  --sidebar-primary: oklch(0.45 0.15 264);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.96 0.01 264);
+  --sidebar-accent-foreground: oklch(0.20 0.02 264);
+  --sidebar-border: oklch(0.90 0.01 264);
+  --sidebar-ring: oklch(0.45 0.15 264);
+  
+  /* Modern Futuristic Additions */
+  --glow: oklch(0.65 0.25 264 / 0.3);
+  --shimmer: oklch(1 0 0 / 0.1);
+  --glass: oklch(1 0 0 / 0.8);
+  --success: oklch(0.65 0.20 145);
+  --warning: oklch(0.75 0.18 85);
+  --info: oklch(0.60 0.20 240);
+}
+
+.dark {
+  /* Base Colors - Dark Theme with depth */
+  --background: oklch(0.14 0.015 264);
+  --foreground: oklch(0.97 0.01 264);
+  
+  /* Card - Elevated surface */
+  --card: oklch(0.18 0.02 264);
+  --card-foreground: oklch(0.97 0.01 264);
+  
+  /* Popover */
+  --popover: oklch(0.18 0.02 264);
+  --popover-foreground: oklch(0.97 0.01 264);
+  
+  /* Primary - Vibrant blue for dark mode */
+  --primary: oklch(0.70 0.20 264);
+  --primary-foreground: oklch(0.14 0.015 264);
+  
+  /* Secondary - Subtle elevation */
+  --secondary: oklch(0.24 0.02 264);
+  --secondary-foreground: oklch(0.97 0.01 264);
+  
+  /* Muted - Mid-tone grays */
+  --muted: oklch(0.24 0.02 264);
+  --muted-foreground: oklch(0.65 0.02 264);
+  
+  /* Accent - Highlight color */
+  --accent: oklch(0.30 0.03 264);
+  --accent-foreground: oklch(0.97 0.01 264);
+  
+  /* Destructive - Softer red for dark */
+  --destructive: oklch(0.65 0.22 27);
+  
+  /* Borders & Inputs - Subtle with alpha */
+  --border: oklch(0.97 0.01 264 / 0.12);
+  --input: oklch(0.97 0.01 264 / 0.15);
+  --ring: oklch(0.70 0.20 264);
+  
+  /* Chart Colors - Enhanced for dark mode */
+  --chart-1: oklch(0.65 0.25 41);      /* Orange */
+  --chart-2: oklch(0.70 0.22 185);     /* Cyan */
+  --chart-3: oklch(0.70 0.20 227);     /* Blue */
+  --chart-4: oklch(0.80 0.22 84);      /* Yellow */
+  --chart-5: oklch(0.75 0.20 70);      /* Lime */
+  
+  /* Sidebar - Darker foundation */
+  --sidebar: oklch(0.16 0.015 264);
+  --sidebar-foreground: oklch(0.97 0.01 264);
+  --sidebar-primary: oklch(0.70 0.20 264);
+  --sidebar-primary-foreground: oklch(0.14 0.015 264);
+  --sidebar-accent: oklch(0.24 0.02 264);
+  --sidebar-accent-foreground: oklch(0.97 0.01 264);
+  --sidebar-border: oklch(0.97 0.01 264 / 0.12);
+  --sidebar-ring: oklch(0.70 0.20 264);
+  
+  /* Modern Futuristic Additions - Dark Mode */
+  --glow: oklch(0.75 0.30 264 / 0.4);
+  --shimmer: oklch(1 0 0 / 0.15);
+  --glass: oklch(0.20 0.02 264 / 0.7);
+  --success: oklch(0.70 0.22 145);
+  --warning: oklch(0.78 0.20 85);
+  --info: oklch(0.68 0.22 240);
+}

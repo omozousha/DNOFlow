@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-Deno.serve(async (req: Request) => {
+Deno.serve(async () => {
   try {
     // Create Supabase client with service role key
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';

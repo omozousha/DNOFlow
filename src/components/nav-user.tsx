@@ -7,7 +7,6 @@ import { useState, useContext } from "react"
 import {
   IconDotsVertical,
   IconLogout,
-  IconUserCircle,
 } from "@tabler/icons-react"
 
 import {
@@ -34,7 +33,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/contexts/auth-context"
 import { NotificationsDialog } from "@/components/notifications-dialog"
-import { Bell, Settings, User, Shield } from "lucide-react"
+import { Bell, Settings, User } from "lucide-react"
 
 
 export function NavUser({ user }: {

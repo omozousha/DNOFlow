@@ -1,7 +1,15 @@
 // User Table Component
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 
-export default function UserTable({ users, onDelete }: { users: any[]; onDelete: (id: string) => void }) {
+type UserRow = {
+  id: string;
+  full_name?: string | null;
+  email?: string | null;
+  role?: string | null;
+  division?: string | null;
+};
+
+export default function UserTable({ users, onDelete }: { users: UserRow[]; onDelete: (id: string) => void }) {
   return (
     <Table>
       <TableHeader>

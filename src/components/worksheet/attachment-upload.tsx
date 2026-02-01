@@ -4,7 +4,6 @@ import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Upload, X, FileText, File } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
@@ -105,8 +104,9 @@ export function AttachmentUpload({ projectId, onUploadSuccess }: AttachmentUploa
       setFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = '';
       onUploadSuccess?.();
-    } catch (error: any) {
-      toast.error("Gagal upload file: " + error.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.error("Gagal upload file: " + message);
     } finally {
       setUploading(false);
     }

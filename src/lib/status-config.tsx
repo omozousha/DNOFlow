@@ -5,7 +5,6 @@ import {
   FolderKanban, 
   CheckCircle2, 
   Clock, 
-  AlertCircle,
   XCircle,
   PlayCircle,
   Calendar

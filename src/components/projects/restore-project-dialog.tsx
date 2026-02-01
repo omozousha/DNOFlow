@@ -82,10 +82,11 @@ export function RestoreProjectDialog({
 
       setOpen(false);
       onSuccess?.();
-    } catch (error: any) {
-      console.error('Failed to restore project:', error);
+    } catch (err: unknown) {
+      console.error('Failed to restore project:', err);
+      const message = err instanceof Error ? err.message : "Terjadi kesalahan";
       toast.error("Gagal merestore project", {
-        description: error.message || "Terjadi kesalahan"
+        description: message
       });
     } finally {
       setLoading(false);

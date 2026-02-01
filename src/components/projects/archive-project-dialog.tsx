@@ -89,10 +89,11 @@ export function ArchiveProjectDialog({
       setOpen(false);
       setReason("");
       onSuccess?.();
-    } catch (error: any) {
-      console.error('Failed to archive project:', error);
+    } catch (err: unknown) {
+      console.error('Failed to archive project:', err);
+      const message = err instanceof Error ? err.message : "Terjadi kesalahan";
       toast.error("Gagal mengarsipkan project", {
-        description: error.message || "Terjadi kesalahan"
+        description: message
       });
     } finally {
       setLoading(false);

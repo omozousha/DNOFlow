@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,17 +33,25 @@ interface LogEntry {
   changed_at: string;
 }
 
+type ProjectLogRow = {
+  id: string;
+  project_id: string;
+  action: string;
+  field_changed: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  changed_at: string;
+  profiles?: {
+    email?: string | null;
+    full_name?: string | null;
+  } | null;
+};
+
 export function ProjectLogsDialog({ open, setOpen, project }: ProjectLogsDialogProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (open && project?.id) {
-      fetchLogs();
-    }
-  }, [open, project?.id]);
-
-  async function fetchLogs() {
+  const fetchLogs = useCallback(async () => {
     if (!project?.id) return;
 
     setLoading(true);
@@ -64,8 +72,10 @@ export function ProjectLogsDialog({ open, setOpen, project }: ProjectLogsDialogP
 
       if (error) throw error;
 
+      const rows = (data || []) as ProjectLogRow[];
+
       // Map data with profile info
-      const mappedLogs = (data || []).map((log: any) => ({
+      const mappedLogs: LogEntry[] = rows.map((log) => ({
         id: log.id,
         project_id: log.project_id,
         action: log.action,
@@ -78,13 +88,19 @@ export function ProjectLogsDialog({ open, setOpen, project }: ProjectLogsDialogP
       }));
 
       setLogs(mappedLogs);
-    } catch (error) {
-      console.error('Failed to fetch logs:', error);
+    } catch (err) {
+      console.error('Failed to fetch logs:', err);
       setLogs([]);
     } finally {
       setLoading(false);
     }
-  }
+  }, [project?.id]);
+
+  useEffect(() => {
+    if (open && project?.id) {
+      fetchLogs();
+    }
+  }, [open, project?.id, fetchLogs]);
 
   function formatDate(dateString: string) {
     const date = new Date(dateString);

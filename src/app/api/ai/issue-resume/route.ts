@@ -7,8 +7,51 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+type ProjectLike = {
+  id?: string;
+  issue?: string | null;
+  progress?: string | null;
+  regional?: string | null;
+  uic?: string | null;
+  nama_project?: string | null;
+  no_project?: string | null;
+};
+
+type IssueSample = {
+  regional?: string | null;
+  progress?: string | null;
+  uic?: string | null;
+};
+
+type TopIssue = {
+  issue: string;
+  count: number;
+  regions: string[];
+  sample?: IssueSample;
+};
+
+type SampleIssueDetail = {
+  regional: string;
+  project: string;
+  issue: string;
+  progress: string;
+  uic: string;
+};
+
+type ProjectSummary = {
+  total: number;
+  withIssues: number;
+  critical: number;
+  high: number;
+  medium: number;
+  regions: string[];
+  topIssues: TopIssue[];
+  sampleDetails: SampleIssueDetail[];
+  issuePercentage: string;
+};
+
 // Generate hash from projects data to detect changes
-function generateProjectsHash(projects: any[]): string {
+function generateProjectsHash(projects: ProjectLike[]): string {
   const relevantData = projects.map(p => ({
     id: p.id,
     issue: p.issue || '',
@@ -23,11 +66,11 @@ function generateProjectsHash(projects: any[]): string {
 // Save resume to database cache
 async function saveToCache(
   projectsHash: string,
-  projectSummary: any,
+  projectSummary: ProjectSummary,
   summary: string,
   aiGenerated: boolean,
-  topIssues: any[],
-  sampleDetails: any[]
+  topIssues: TopIssue[],
+  sampleDetails: SampleIssueDetail[]
 ) {
   try {
     const { error } = await supabase
@@ -62,7 +105,9 @@ async function saveToCache(
 
 export async function POST(request: NextRequest) {
   try {
-    const { projects, forceRefresh = false } = await request.json();
+    const body = (await request.json()) as { projects?: ProjectLike[]; forceRefresh?: boolean };
+    const projects = body.projects;
+    const forceRefresh = body.forceRefresh ?? false;
 
     // Validate projects data
     if (!Array.isArray(projects)) {
@@ -104,29 +149,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Collect ALL issues from ALL projects (including detailed analysis)
-    const projectsWithIssues = projects.filter((p: any) => 
-      p.issue && p.issue.trim() !== '' && p.issue.toLowerCase() !== 'n/a'
+    const projectsWithIssues = projects.filter((p): p is ProjectLike & { issue: string } =>
+      typeof p.issue === 'string' && p.issue.trim() !== '' && p.issue.toLowerCase() !== 'n/a'
     );
 
     // Count issues by severity based on progress status
-    const criticalProjects = projects.filter((p: any) =>
-      p.progress?.toLowerCase().includes('cancel') ||
-      p.progress?.toLowerCase().includes('reject')
-    );
-    const highProjects = projects.filter((p: any) =>
-      p.progress?.toLowerCase().includes('pending') ||
-      p.progress?.toLowerCase().includes('hold')
-    );
-    const mediumProjects = projects.filter((p: any) =>
-      p.progress?.toLowerCase().includes('not yet') ||
-      p.progress?.toLowerCase().includes('belum')
-    );
+    const criticalProjects = projects.filter((p) => {
+      const progress = p.progress?.toLowerCase() ?? '';
+      return progress.includes('cancel') || progress.includes('reject');
+    });
+    const highProjects = projects.filter((p) => {
+      const progress = p.progress?.toLowerCase() ?? '';
+      return progress.includes('pending') || progress.includes('hold');
+    });
+    const mediumProjects = projects.filter((p) => {
+      const progress = p.progress?.toLowerCase() ?? '';
+      return progress.includes('not yet') || progress.includes('belum');
+    });
 
     // Get ALL unique issues with frequency analysis
     const issueFrequency = new Map<string, number>();
-    const issueDetails = new Map<string, any[]>();
+    const issueDetails = new Map<string, IssueSample[]>();
     
-    projectsWithIssues.forEach((p: any) => {
+    projectsWithIssues.forEach((p) => {
       const issue = p.issue.trim();
       issueFrequency.set(issue, (issueFrequency.get(issue) || 0) + 1);
       
@@ -141,12 +186,12 @@ export async function POST(request: NextRequest) {
     });
     
     // Top 15 most frequent issues (increased from 10)
-    const topIssues = Array.from(issueFrequency.entries())
+    const topIssues: TopIssue[] = Array.from(issueFrequency.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 15)
       .map(([issue, count]) => {
         const details = issueDetails.get(issue) || [];
-        const regions = [...new Set(details.map(d => d.regional).filter(Boolean))];
+        const regions = [...new Set(details.map(d => d.regional).filter((r): r is string => Boolean(r)))];
         return {
           issue,
           count,
@@ -156,7 +201,7 @@ export async function POST(request: NextRequest) {
       });
 
     // Get comprehensive issue details (up to 10 instead of 5)
-    const sampleIssueDetails = projectsWithIssues.slice(0, 10).map((p: any) => ({
+    const sampleIssueDetails: SampleIssueDetail[] = projectsWithIssues.slice(0, 10).map((p) => ({
       regional: p.regional || 'N/A',
       project: p.nama_project || p.no_project || 'Unknown',
       issue: p.issue,
@@ -165,13 +210,13 @@ export async function POST(request: NextRequest) {
     }));
 
     // Prepare COMPREHENSIVE project data for AI analysis
-    const projectSummary = {
+    const projectSummary: ProjectSummary = {
       total: projects.length,
       withIssues: projectsWithIssues.length,
       critical: criticalProjects.length,
       high: highProjects.length,
       medium: mediumProjects.length,
-      regions: [...new Set(projects.map((p: any) => p.regional).filter(Boolean))],
+      regions: [...new Set(projects.map((p) => p.regional).filter((r): r is string => Boolean(r)))],
       topIssues,
       sampleDetails: sampleIssueDetails,
       issuePercentage: ((projectsWithIssues.length / projects.length) * 100).toFixed(1),
@@ -314,12 +359,13 @@ Resume Komprehensif:`;
       aiGenerated: false,
       cached: false,
     });
-  } catch (error: any) {
-    console.error('Error in issue-resume API:', error);
+  } catch (err: unknown) {
+    console.error('Error in issue-resume API:', err);
+    const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json(
       {
         error: 'Failed to generate summary',
-        message: error.message,
+        message,
         summary: "⚠️ Gagal menganalisis proyek. Silakan refresh halaman.",
         criticalCount: 0,
         highCount: 0,

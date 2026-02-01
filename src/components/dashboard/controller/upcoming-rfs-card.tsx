@@ -7,17 +7,17 @@ import { motion } from "framer-motion";
 import { TrendingUp, MapPin } from "lucide-react";
 import { useMemo } from "react";
 
-interface UpcomingProject {
-  name: string;
-  regional: string;
-  progress: number;
-  daysToRFS: number;
-  targetDate: Date | null;
-  isOverdue: boolean;
-}
+type ProjectLike = {
+  progress?: string | null;
+  tanggal_active?: string | null;
+  target_active?: string | null;
+  nama_project?: string | null;
+  no_project?: string | null;
+  regional?: string | null;
+};
 
 interface UpcomingRFSCardProps {
-  projects: any[];
+  projects: ProjectLike[];
 }
 
 export function UpcomingRFSCard({ projects }: UpcomingRFSCardProps) {
@@ -81,7 +81,7 @@ export function UpcomingRFSCard({ projects }: UpcomingRFSCardProps) {
           if (!isNaN(diffDays) && diffDays > -30) { // Include up to 30 days overdue
             daysToRFS = diffDays;
           }
-        } catch (e) {
+        } catch {
           // Keep fallback estimate if date parsing fails
         }
       }

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import ProtectedRoute from '@/components/auth/protected-route'
-import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase/client'
 import { MetricCard } from '@/components/dashboard/shared/metric-card'
 
@@ -41,8 +40,6 @@ type ActivityLog = {
    Page
 ======================= */
 export default function AdminDashboardPage() {
-  const { profile } = useAuth()
-
   const [userStats, setUserStats] = useState({
     totalUsers: 0,
     activeUsers: 0,

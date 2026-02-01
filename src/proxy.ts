@@ -2,19 +2,16 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
-// Rate limiting store (in-memory, will reset on server restart)
-const loginAttempts = new Map<string, { count: number; resetAt: number }>();
-
 // Public routes yang tidak perlu auth
 const PUBLIC_ROUTES = ['/login', '/api/auth/callback'];
 // API routes yang perlu auth
 const PROTECTED_API_ROUTES = ['/api/admin', '/api/auth/login-audit'];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   // Allow public routes
-  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
+  if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }
 
@@ -71,31 +68,39 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session if expired - this will auto-refresh the session
-  const { data: { session } } = await supabase.auth.getSession();
+  // Use getUser() instead of getSession() for security
+  // getUser() validates the JWT token with Supabase server, preventing cookie manipulation
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Protect admin, owner, controller routes
-  const isProtectedRoute = pathname.startsWith('/admin') || 
-                          pathname.startsWith('/owner') || 
-                          pathname.startsWith('/controller') ||
-                          pathname.startsWith('/account');
-  
-  // Protect API routes
-  const isProtectedAPI = PROTECTED_API_ROUTES.some(route => pathname.startsWith(route));
+  const isProtectedRoute =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/owner') ||
+    pathname.startsWith('/controller') ||
+    pathname.startsWith('/account');
 
-  if ((isProtectedRoute || isProtectedAPI) && !session) {
+  // Protect API routes
+  const isProtectedAPI = PROTECTED_API_ROUTES.some((route) => pathname.startsWith(route));
+
+  // Check if user exists for protected routes
+  if ((isProtectedRoute || isProtectedAPI) && !user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = '/login';
     redirectUrl.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
+  // Note: Session expiry check is handled client-side in auth-context.tsx
+  // Proxy only checks if user is authenticated, not if it's expired due to inactivity
+
   // Check user profile and role for protected routes
-  if (isProtectedRoute && session) {
+  if (isProtectedRoute && user) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role, is_active')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single();
 
     // Block inactive users
@@ -123,7 +128,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };

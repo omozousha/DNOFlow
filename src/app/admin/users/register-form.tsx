@@ -112,9 +112,10 @@ export default function RegisterForm({ onSuccess }: { onSuccess?: () => void }) 
         setDivision("PLANNING");
         if (onSuccess) onSuccess();
       }
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
-      toast.error(err.message || "An error occurred", { id: "register-toast" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "An error occurred";
+      setError(message);
+      toast.error(message, { id: "register-toast" });
     } finally {
       setLoading(false);
     }

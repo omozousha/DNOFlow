@@ -30,6 +30,43 @@ interface UpdateProjectDrawerProps {
   onSuccess?: () => void;
 }
 
+type UpdateProjectFormData = {
+  // Locked fields (read-only)
+  regional: string;
+  no_project: string;
+  no_spk: string;
+  pop: string;
+  nama_project: string;
+  port: string;
+  jumlah_odp: string;
+
+  // Editable fields
+  mitra: string;
+  progress: string;
+  persentase: string;
+  toc: string;
+  start_pekerjaan?: Date;
+  target_active?: Date;
+  tanggal_active?: Date;
+  aging_toc: string;
+  bep: string;
+  port_terisi: string;
+  target_bep?: Date;
+  revenue: string;
+  remark: string;
+  issue: string;
+  next_action: string;
+  circulir_status: string;
+};
+
+type UserProfile = {
+  id: string;
+  email?: string | null;
+  role?: string | null;
+  division?: string | null;
+  is_active?: boolean | null;
+};
+
 // Progress mapping - same as new project form
 const PLANNING_PROGRESS = [
   "REJECT",
@@ -119,7 +156,31 @@ export function UpdateProjectDrawer({ open, setOpen, project, onSuccess }: Updat
   const { profile } = useAuth();
   
   // Form state - initialize with project data
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<UpdateProjectFormData>({
+    regional: "",
+    no_project: "",
+    no_spk: "",
+    pop: "",
+    nama_project: "",
+    port: "",
+    jumlah_odp: "",
+    mitra: "",
+    progress: "",
+    persentase: "0",
+    toc: "",
+    start_pekerjaan: undefined,
+    target_active: undefined,
+    tanggal_active: undefined,
+    aging_toc: "",
+    bep: "",
+    port_terisi: "",
+    target_bep: undefined,
+    revenue: "",
+    remark: "",
+    issue: "",
+    next_action: "",
+    circulir_status: "",
+  });
   const [loading, setLoading] = useState(false);
   const [attachmentKey, setAttachmentKey] = useState(0);
 
@@ -158,13 +219,13 @@ export function UpdateProjectDrawer({ open, setOpen, project, onSuccess }: Updat
         progress: project.progress || "",
         persentase: project.persentase || "0",
         toc: project.toc || "",
-        start_pekerjaan: project.start_pekerjaan || "",
-        target_active: project.target_active || "",
-        tanggal_active: project.tanggal_active || "",
+        start_pekerjaan: project.start_pekerjaan ? new Date(project.start_pekerjaan) : undefined,
+        target_active: project.target_active ? new Date(project.target_active) : undefined,
+        tanggal_active: project.tanggal_active ? new Date(project.tanggal_active) : undefined,
         aging_toc: project.aging_toc || "",
         bep: project.bep || "",
         port_terisi: project.port_terisi || "",
-        target_bep: project.target_bep || "",
+        target_bep: project.target_bep ? new Date(project.target_bep) : undefined,
         revenue: project.revenue || "",
         remark: project.remark || "",
         issue: project.issue || "",
@@ -179,7 +240,7 @@ export function UpdateProjectDrawer({ open, setOpen, project, onSuccess }: Updat
     if (formData.progress) {
       const mapping = PROGRESS_MAPPING[formData.progress];
       if (mapping) {
-        setFormData((prev: any) => ({
+        setFormData((prev) => ({
           ...prev,
           persentase: mapping.percentage.toString()
         }));
@@ -187,8 +248,8 @@ export function UpdateProjectDrawer({ open, setOpen, project, onSuccess }: Updat
     }
   }, [formData.progress]);
 
-  function handleChange(field: string, value: any) {
-    setFormData((prev: any) => ({ ...prev, [field]: value }));
+  function handleChange<K extends keyof UpdateProjectFormData>(field: K, value: UpdateProjectFormData[K]) {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
   function handleAttachmentUpdate() {
@@ -215,7 +276,7 @@ export function UpdateProjectDrawer({ open, setOpen, project, onSuccess }: Updat
       console.log('Updating project as user:', userId);
 
       // Check user profile and permissions
-      let userProfile: any = null;
+      let userProfile: UserProfile | null = null;
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id, email, role, division, is_active')
@@ -277,19 +338,11 @@ export function UpdateProjectDrawer({ open, setOpen, project, onSuccess }: Updat
         return;
       }
 
-      // Helper to convert Date to ISO string or null
-      function dateToISO(date?: Date | string | null) {
+      // Helper to convert Date to ISO string (YYYY-MM-DD) or null
+      function dateToISO(date?: Date) {
         if (!date) return null;
-        if (date instanceof Date) {
-          // Check if valid date
-          if (isNaN(date.getTime())) return null;
-          return date.toISOString().split('T')[0];
-        }
-        // If already a string, validate and return
-        if (typeof date === 'string' && date.trim() !== '') {
-          return date.trim();
-        }
-        return null;
+        if (isNaN(date.getTime())) return null;
+        return date.toISOString().split('T')[0];
       }
 
       // Calculate derived fields with proper type conversions
@@ -361,7 +414,7 @@ export function UpdateProjectDrawer({ open, setOpen, project, onSuccess }: Updat
 
       // Prepare update data - convert all to string for database compatibility
       // Note: idle_port is excluded because it's a GENERATED ALWAYS column
-      const updateData: Record<string, any> = {
+      const updateData: Record<string, string | null> = {
         // Editable fields only
         mitra: formData.mitra || null,
         progress: formData.progress || null,
@@ -476,21 +529,25 @@ export function UpdateProjectDrawer({ open, setOpen, project, onSuccess }: Updat
       );
       onSuccess?.();
       setOpen(false);
-    } catch (error: any) {
-      console.error('Update project error (stringified):', JSON.stringify(error, null, 2));
-      console.error('Update project error (raw):', error);
+    } catch (err: unknown) {
+      console.error('Update project error (stringified):', JSON.stringify(err, null, 2));
+      console.error('Update project error (raw):', err);
       
       // Better error message
       let errorMessage = 'Gagal update project';
-      if (error?.message) {
-        errorMessage += `: ${error.message}`;
-      } else if (error?.code) {
-        errorMessage += `: Error code ${error.code}`;
-      } else if (typeof error === 'string') {
-        errorMessage += `: ${error}`;
+      const errorObj = (typeof err === 'object' && err !== null) ? (err as Record<string, unknown>) : null;
+      const message = errorObj?.message;
+      const code = errorObj?.code;
+
+      if (typeof message === 'string' && message) {
+        errorMessage += `: ${message}`;
+      } else if (typeof code === 'string' && code) {
+        errorMessage += `: Error code ${code}`;
+      } else if (typeof err === 'string') {
+        errorMessage += `: ${err}`;
       } else {
         // Try to extract any useful info
-        const errStr = error?.toString ? error.toString() : String(error);
+        const errStr = errorObj?.toString ? String(errorObj.toString()) : String(err);
         if (errStr !== '[object Object]') {
           errorMessage += `: ${errStr}`;
         }
@@ -499,14 +556,14 @@ export function UpdateProjectDrawer({ open, setOpen, project, onSuccess }: Updat
       // Log detailed error for debugging
       try {
         console.error('Error details (stringified):', JSON.stringify({
-          message: error?.message,
-          code: error?.code,
-          details: error?.details,
-          hint: error?.hint,
-          name: error?.name,
-          stack: error?.stack
+          message: errorObj?.message,
+          code: errorObj?.code,
+          details: errorObj?.details,
+          hint: errorObj?.hint,
+          name: errorObj?.name,
+          stack: errorObj?.stack
         }, null, 2));
-      } catch (e) {
+      } catch {
         console.error('Could not stringify error');
       }
       

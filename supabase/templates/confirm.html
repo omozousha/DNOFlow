@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Konfirmasi Email - DNOFlow</title>
+  <title>Undangan Akun - DNOFlow</title>
   <style>
     body {
       margin: 0;
@@ -49,7 +49,19 @@
     .message {
       font-size: 15px;
       color: #555555;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
+    }
+    .info-box {
+      background-color: #f0f8ff;
+      border-left: 4px solid #0070f3;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #333333;
+    }
+    .info-box strong {
+      color: #0070f3;
     }
     .button-container {
       text-align: center;
@@ -109,7 +121,7 @@
     <!-- Header -->
     <div class="header">
       <h1>🎯 DNOFlow</h1>
-      <p>District Network Operations Management</p>
+      <p>Project Management and Monitoring Dashboard</p>
     </div>
 
     <!-- Content -->
@@ -119,16 +131,21 @@
       </p>
 
       <p class="message">
-        Terima kasih telah mendaftar di <strong>DNOFlow</strong>. Kami senang Anda bergabung dengan tim kami!
+        Anda telah diundang untuk bergabung dengan <strong>DNOFlow</strong> oleh administrator.
       </p>
 
       <p class="message">
-        Untuk menyelesaikan proses pendaftaran dan mengaktifkan akun Anda, silakan klik tombol konfirmasi di bawah ini:
+        Untuk mengaktifkan akun Anda dan memulai penggunaan sistem, silakan klik tombol di bawah ini:
       </p>
+
+      <div class="info-box">
+        📧 <strong>Email:</strong> {{ .Email }}<br>
+        👤 <strong>Nama Lengkap:</strong> {{ .Data.full_name }}
+      </div>
 
       <div class="button-container">
         <a href="{{ .ConfirmationURL }}" class="confirm-button">
-          ✓ Konfirmasi Email Saya
+          ✓ Aktifkan Akun Saya
         </a>
       </div>
 
@@ -143,19 +160,15 @@
       </div>
 
       <p class="message" style="margin-top: 30px; font-size: 13px; color: #888888;">
-        ⏰ Link konfirmasi ini akan kedaluwarsa dalam 1 jam.<br>
-        📧 Email Anda: <strong>{{ .Email }}</strong>
-      </p>
-
-      <p class="message" style="margin-top: 20px; font-size: 13px; color: #ff6b6b;">
-        ⚠️ Jika Anda tidak mendaftar ke DNOFlow, abaikan email ini.
+        ⏰ Link aktivasi ini akan kedaluwarsa dalam 1 jam.<br>
+        🔒 Jika Anda menerima email ini secara tidak terduga, silakan hubungi administrator.
       </p>
     </div>
 
     <!-- Footer -->
     <div class="footer">
       <p><strong>DNOFlow Team</strong></p>
-      <p>District Network Operations Management System</p>
+      <p>Project Management and Monitoring Dashboard</p>
       <p style="margin-top: 15px; color: #aaaaaa;">
         © 2026 DNOFlow. All rights reserved.
       </p>

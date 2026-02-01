@@ -28,12 +28,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const userRole = profile?.role as keyof typeof sidebarConfig | undefined;
   const navItems = userRole ? sidebarConfig[userRole] : [];
 
-  const getSidebarTitle = () => {
-    if (!userRole) return "Dashboard";
-    // You can customize the title logic here if needed
-    return `${userRole.charAt(0).toUpperCase() + userRole.slice(1)} Dashboard`;
-  };
-
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -43,10 +37,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-                <a href={userRole ? `/${userRole}` : "/dashboard"}>
+              <Link href={userRole ? `/${userRole}` : "/dashboard"}>
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">DNOFlow</span>
-                </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

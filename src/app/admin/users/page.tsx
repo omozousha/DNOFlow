@@ -3,7 +3,6 @@
 
 import { useState, useEffect } from 'react';
 
-import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import UserManagementTable from '@/components/shared/user-management-table';
 import RegisterForm from './register-form';
@@ -44,7 +43,7 @@ export default function UserManagementPage() {
   const handleDelete = async (id: string) => {
     setLoading(true);
     try {
-      // Get session token untuk authorization
+      // Get session for authorization (getSession is OK here for getting access_token)
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         alert('Session expired. Please login again.');
@@ -81,7 +80,7 @@ export default function UserManagementPage() {
   const handleEdit = async (id: string, data: Partial<User>) => {
     setLoading(true);
     try {
-      // Get session token untuk authorization
+      // Get session for authorization (getSession is OK here for getting access_token)
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         alert('Session expired. Please login again.');

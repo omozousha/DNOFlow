@@ -1,6 +1,5 @@
 // Script to generate Excel template for project import
 import XLSX from 'xlsx';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 

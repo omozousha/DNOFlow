@@ -45,6 +45,7 @@ next-env.d.ts
 .vscode/
 .trash/
 db-query.js
+db-query.mjs
 
 # Supabase
 .supabase/

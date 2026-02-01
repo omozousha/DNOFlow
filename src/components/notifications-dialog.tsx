@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -35,35 +35,48 @@ export function NotificationsDialog({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
+    if (!user?.id) {
+      setNotifications([]);
+      return;
+    }
+
     setLoading(true);
-    // For now, show recent activity as notifications
-    const { data: logs } = await supabase
-      .from('profiles_audit_log')
-      .select('*')
-      .eq('profile_id', user?.id)
-      .order('changed_at', { ascending: false })
-      .limit(10);
+    try {
+      // For now, show recent activity as notifications
+      const { data: logs, error } = await supabase
+        .from('profiles_audit_log')
+        .select('*')
+        .eq('profile_id', user?.id)
+        .order('changed_at', { ascending: false })
+        .limit(10);
 
-    const mapped: Notification[] = (logs || []).map((log) => ({
-      id: log.id,
-      title: log.action || 'Activity',
-      message: log.old_data || log.new_data || 'Activity logged',
-      type: log.action?.includes('delete') ? 'error' : 
-            log.action?.includes('update') ? 'warning' : 'info',
-      read: false,
-      created_at: log.changed_at,
-    }));
+      if (error) throw error;
 
-    setNotifications(mapped);
-    setLoading(false);
-  };
+      const mapped: Notification[] = (logs || []).map((log) => ({
+        id: log.id,
+        title: log.action || 'Activity',
+        message: log.old_data || log.new_data || 'Activity logged',
+        type: log.action?.includes('delete') ? 'error' : 
+              log.action?.includes('update') ? 'warning' : 'info',
+        read: false,
+        created_at: log.changed_at,
+      }));
+
+      setNotifications(mapped);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     if (open && user) {
       fetchNotifications();
     }
-  }, [open, user]);
+  }, [open, user, fetchNotifications]);
 
   const markAsRead = (id: string) => {
     setNotifications((prev) =>

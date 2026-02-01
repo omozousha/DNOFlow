@@ -16,8 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dashboard - FTTH Management System",
-  description: "FTTH Project Management and Monitoring Dashboard",
+  title: "DNOFlow",
+  description: "Project Management and Monitoring Dashboard",
+  icons: {
+    icon: [{ url: "/favicon.ico", type: "image/svg+xml" }],
+    shortcut: ["/favicon.ico"],
+  },
 };
 
 export default function RootLayout({
